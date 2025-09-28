@@ -1,0 +1,212 @@
+const path = require("path");
+const webpack = require("webpack");
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
+
+/**
+ * Webpack 开发环境配置
+ * 注意：这里不再需要 merge，因为合并操作在主配置文件中完成
+ */
+module.exports = {
+  mode: "development",
+
+  // 开发环境源码映射 - 平衡构建速度和调试体验
+  devtool: "eval-cheap-module-source-map",
+
+  // 开发服务器配置
+  devServer: {
+    static: [
+      {
+        directory: path.join(__dirname, "../public"),
+        publicPath: "/",
+      },
+    ],
+    port: process.env.PORT || 3000,
+    host: "localhost",
+    historyApiFallback: {
+      // SPA 路由支持
+      disableDotRule: true,
+      index: "/index.html",
+    },
+    compress: true, // 启用 gzip 压缩
+    client: {
+      overlay: {
+        errors: true,
+        warnings: false,
+      },
+      progress: true,
+      reconnect: 3,
+    },
+    // 开发服务器中间件配置
+    setupMiddlewares: (middlewares, devServer) => {
+      if (!devServer) {
+        throw new Error("webpack-dev-server is not defined");
+      }
+
+      // 自定义中间件可以在这里添加
+      middlewares.unshift({
+        name: "custom-headers",
+        middleware: (req, res, next) => {
+          res.setHeader("X-Custom-Header", "development");
+          next();
+        },
+      });
+
+      return middlewares;
+    },
+    // 监听文件变化
+    watchFiles: {
+      paths: ["src/**/*", "public/**/*"],
+      options: {
+        usePolling: false,
+        interval: 1000,
+        aggregateTimeout: 300,
+      },
+    },
+    // HTTPS 配置（如果需要）
+    // https: true,
+  },
+
+  // 输出配置（开发环境）
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    publicPath: "/",
+    clean: true,
+    filename: "static/js/[name].js",
+    chunkFilename: "static/js/[name].chunk.js",
+    assetModuleFilename: "static/media/[name][ext]",
+    pathinfo: false, // 提升构建性能
+  },
+
+  // 开发环境插件
+  plugins: [
+    // 定义环境变量
+		new ReactRefreshWebpackPlugin(),
+    new webpack.DefinePlugin({
+      "process.env.NODE_ENV": JSON.stringify("development"),
+      __DEV__: true,
+      __PROD__: false,
+    }),
+    // 热模块替换插件
+    new webpack.HotModuleReplacementPlugin(),
+    // 进度插件
+    new webpack.ProgressPlugin({
+      activeModules: false,
+      entries: true,
+      handler(percentage, message, ...args) {
+        // 自定义进度输出
+        if (percentage === 1) {
+          console.log("✅ Webpack compilation completed successfully!");
+        }
+      },
+      modules: true,
+      modulesCount: 5000,
+      profile: false,
+      dependencies: true,
+      dependenciesCount: 10000,
+      percentBy: null,
+    }),
+    // HTML 模板插件
+    new HtmlWebpackPlugin({
+      template: "./public/index.html",
+      inject: true,
+      scriptLoading: "defer",
+    }),
+    // CSS 提取插件
+    new MiniCssExtractPlugin({
+      filename: "static/css/[name].css",
+      chunkFilename: "static/css/[name].chunk.css",
+    }),
+  ].filter(Boolean),
+
+  // 开发环境优化配置
+  optimization: {
+    removeAvailableModules: false,
+    removeEmptyChunks: false,
+    splitChunks: false, // 开发环境不需要代码分割，加快构建速度
+    minimize: false, // 开发环境不压缩代码
+    usedExports: false,
+    sideEffects: false,
+    // 开发环境下保持模块名称便于调试
+    chunkIds: "named",
+    moduleIds: "named",
+  },
+
+  // 统计信息配置
+  stats: {
+    preset: "minimal",
+    colors: true,
+    errorDetails: true,
+    builtAt: true,
+    timings: true,
+    modules: false,
+    assets: false,
+    children: false,
+    chunks: false,
+    hash: false,
+    version: false,
+    entrypoints: false,
+  },
+	module: {
+    rules: [
+      {
+        test: /\.(js|jsx|ts|tsx)$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "swc-loader",
+          options: {
+            // 可以在这里覆盖 .swcrc 的配置，或者直接使用 .swcrc
+            // 如果不指定 options，会自动读取 .swcrc 文件
+            
+            // 开发环境特定配置示例
+            jsc: {
+              transform: {
+                react: {
+                  refresh: process.env.NODE_ENV === 'development'
+                }
+              }
+            },
+            env:  process.env.NODE_ENV === 'production' ?
+                {
+                    chrome: "90",
+                    firefox: "88", 
+                    safari: "14",
+                    edge: "90"
+                  }: null
+          }
+        }
+      }
+    ]
+  },
+  // 监听配置
+  watchOptions: {
+    aggregateTimeout: 200,
+    poll: false,
+    ignored: /node_modules/,
+  },
+
+  // 开发环境下的实验性功能
+  experiments: {
+    lazyCompilation: {
+      // 启用懒编译以提升开发体验
+      entries: false,
+      imports: true,
+    },
+    // 缓存编译结果
+    cacheUnaffected: true,
+  },
+
+  // 性能提示配置（开发环境关闭）
+  performance: {
+    hints: false,
+  },
+
+  // 基础设施日志配置
+  infrastructureLogging: {
+    level: "warn",
+  },
+
+  // 目标环境
+  target: "web",
+};
