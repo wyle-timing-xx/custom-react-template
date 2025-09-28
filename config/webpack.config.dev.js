@@ -194,7 +194,7 @@ module.exports = {
             sourceMaps: true,
           }
         }
-      }
+      },
     ]
   },
   // 监听配置
