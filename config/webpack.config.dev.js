@@ -1,9 +1,8 @@
 const path = require("path");
 const webpack = require("webpack");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
-
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 /**
  * Webpack 开发环境配置
  * 注意：这里不再需要 merge，因为合并操作在主配置文件中完成
@@ -82,14 +81,32 @@ module.exports = {
   // 开发环境插件
   plugins: [
     // 定义环境变量
-		new ReactRefreshWebpackPlugin(),
     new webpack.DefinePlugin({
       "process.env.NODE_ENV": JSON.stringify("development"),
       __DEV__: true,
       __PROD__: false,
     }),
-    // 热模块替换插件
-    // new webpack.HotModuleReplacementPlugin(),
+    new HtmlWebpackPlugin({
+      template: './public/index-dev.html',
+      filename: 'index.html',
+      inject: 'body',
+      // 开发环境不压缩，便于调试
+      minify: false,
+      // 开发环境特定配置
+      cache: false,                         // 关闭缓存，确保实时更新
+      showErrors: true,                     // 显示错误信息到页面
+      // 传递开发环境变量
+      templateParameters: {
+        title: 'React App - Development',
+        description: 'React application in development mode',
+        NODE_ENV: 'development',
+        useCDN: false,
+        // 开发环境提示信息
+        devMode: true,
+      }
+    }),
+    // 确保 ReactRefreshWebpackPlugin 在插件列表中
+    new ReactRefreshWebpackPlugin(),
     // 进度插件
     new webpack.ProgressPlugin({
       activeModules: false,
@@ -156,12 +173,25 @@ module.exports = {
           loader: "swc-loader",
           options: {
             jsc: {
+              parser: {
+                syntax: "typescript",
+                tsx: true,
+                decorators: true,
+                dynamicImport: true,
+              },
               transform: {
                 react: {
-                  refresh: true
-                }
-              }
-            }
+                  runtime: "automatic",
+                  development: true,        // 开发模式
+                  refresh: true,           // 启用 Fast Refresh
+                },
+              },
+              target: "es2020",
+            },
+            module: {
+              type: "es6",
+            },
+            sourceMaps: true,
           }
         }
       }

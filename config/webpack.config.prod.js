@@ -1,212 +1,472 @@
 const path = require("path");
 const webpack = require("webpack");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
+const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
+const CompressionPlugin = require("compression-webpack-plugin");
+const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
+const WorkboxWebpackPlugin = require("workbox-webpack-plugin");
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 /**
- * Webpack 开发环境配置
- * 注意：这里不再需要 merge，因为合并操作在主配置文件中完成
+ * Webpack 生产环境配置
+ * 专注于性能优化、代码压缩、缓存策略等生产环境特性
  */
 module.exports = {
-  mode: "development",
+  // 生产模式 - 启用各种优化
+  mode: "production",
 
-  // 开发环境源码映射 - 平衡构建速度和调试体验
-  devtool: "eval-cheap-module-source-map",
+  // 生产环境源码映射 - 平衡文件大小和调试需求
+  devtool: "source-map", // 生成独立的 .map 文件，便于错误追踪
 
-  // 开发服务器配置
-  devServer: {
-    static: [
-      {
-        directory: path.join(__dirname, "../public"),
-        publicPath: "/",
-      },
-    ],
-    port: process.env.PORT || 3000,
-    host: "localhost",
-    historyApiFallback: {
-      // SPA 路由支持
-      disableDotRule: true,
-      index: "/index.html",
-    },
-    compress: true, // 启用 gzip 压缩
-    client: {
-      overlay: {
-        errors: true,
-        warnings: false,
-      },
-      progress: true,
-      reconnect: 3,
-    },
-    // 开发服务器中间件配置
-    setupMiddlewares: (middlewares, devServer) => {
-      if (!devServer) {
-        throw new Error("webpack-dev-server is not defined");
-      }
-
-      // 自定义中间件可以在这里添加
-      middlewares.unshift({
-        name: "custom-headers",
-        middleware: (req, res, next) => {
-          res.setHeader("X-Custom-Header", "development");
-          next();
-        },
-      });
-
-      return middlewares;
-    },
-    // 监听文件变化
-    watchFiles: {
-      paths: ["src/**/*", "public/**/*"],
-      options: {
-        usePolling: false,
-        interval: 1000,
-        aggregateTimeout: 300,
-      },
-    },
-    // HTTPS 配置（如果需要）
-    // https: true,
-  },
-
-  // 输出配置（开发环境）
+  // 生产环境输出配置
   output: {
-    path: path.resolve(__dirname, "dist"),
-    publicPath: "/",
-    clean: true,
-    filename: "static/js/[name].js",
-    chunkFilename: "static/js/[name].chunk.js",
-    assetModuleFilename: "static/media/[name][ext]",
-    pathinfo: false, // 提升构建性能
+    path: path.resolve(__dirname, "../dist"),
+    publicPath: "/", // CDN 部署时可改为 CDN 地址
+    clean: true, // 构建前清理输出目录
+    // 文件名包含内容哈希，便于缓存策略
+    filename: "static/js/[name].[contenthash:8].js",
+    chunkFilename: "static/js/[name].[contenthash:8].chunk.js",
+    assetModuleFilename: "static/media/[name].[hash:8][ext]",
+    // 生产环境优化
+    pathinfo: false, // 不包含路径信息，减小包体积
+    // 跨域加载资源配置
+    crossOriginLoading: "anonymous",
+    // 模块联邦相关（如果使用）
+    // uniqueName: "custom-react-app",
   },
 
-  // 开发环境插件
+  // 生产环境插件配置
   plugins: [
-    // 定义环境变量
-		new ReactRefreshWebpackPlugin(),
+    // 环境变量定义
     new webpack.DefinePlugin({
-      "process.env.NODE_ENV": JSON.stringify("development"),
-      __DEV__: true,
-      __PROD__: false,
+      "process.env.NODE_ENV": JSON.stringify("production"),
+      __DEV__: false,
+      __PROD__: true,
+      // 可以添加更多环境变量
+      "process.env.REACT_APP_VERSION": JSON.stringify(process.env.npm_package_version),
     }),
-    // 热模块替换插件
-    new webpack.HotModuleReplacementPlugin(),
-    // 进度插件
-    new webpack.ProgressPlugin({
-      activeModules: false,
-      entries: true,
-      handler(percentage, message, ...args) {
-        // 自定义进度输出
-        if (percentage === 1) {
-          console.log("✅ Webpack compilation completed successfully!");
-        }
-      },
-      modules: true,
-      modulesCount: 5000,
-      profile: false,
-      dependencies: true,
-      dependenciesCount: 10000,
-      percentBy: null,
-    }),
-    // HTML 模板插件
     new HtmlWebpackPlugin({
-      template: "./public/index.html",
-      inject: true,
-      scriptLoading: "defer",
+      template: './public/index-prod.html',
+      filename: 'index.html',
+      inject: 'body',
+      minify: {
+        removeComments: true,                // 移除注释
+        collapseWhitespace: true,           // 压缩空白字符
+        removeAttributeQuotes: true,        // 移除属性引号
+        removeRedundantAttributes: true,    // 移除冗余属性
+        useShortDoctype: true,              // 使用短的 doctype
+        removeEmptyAttributes: true,        // 移除空属性
+        removeScriptTypeAttributes: true,   // 移除 script 的 type 属性
+        removeStyleLinkTypeAttributes: true,// 移除 style 和 link 的 type 属性
+        minifyJS: true,                     // 压缩内联 JS
+        minifyCSS: true,                    // 压缩内联 CSS
+      },
+      // 生产环境特定配置
+      cache: true,                          // 启用缓存
+      showErrors: false,                    // 不显示错误信息到页面
+      // 可以传递自定义变量到模板
+      templateParameters: {
+        title: 'React App - Production',
+        description: 'React application in production mode',
+        NODE_ENV: 'production',
+        useCDN: true,
+        reactCDN: 'https://unpkg.com/umd-react@19.1.0/dist/react.production.min.js',
+        reactDOMCDN: 'https://unpkg.com/umd-react@19.1.0/dist/react-dom.production.min.js',
+      }
     }),
-    // CSS 提取插件
+    // CSS 提取和优化
     new MiniCssExtractPlugin({
-      filename: "static/css/[name].css",
-      chunkFilename: "static/css/[name].chunk.css",
+      filename: "static/css/[name].[contenthash:8].css",
+      chunkFilename: "static/css/[name].[contenthash:8].chunk.css",
+      // 忽略冲突的顺序警告（通常不影响功能）
+      ignoreOrder: true,
+    }),
+
+    // Gzip 压缩
+    new CompressionPlugin({
+      algorithm: "gzip",
+      test: /\.(js|css|html|svg)$/,
+      threshold: 8192, // 只压缩大于 8KB 的文件
+      minRatio: 0.8, // 压缩率小于 80% 才压缩
+      deleteOriginalAssets: false, // 保留原文件
+    }),
+
+    // Brotli 压缩（更好的压缩率）
+    new CompressionPlugin({
+      filename: "[path][base].br",
+      algorithm: "brotliCompress",
+      test: /\.(js|css|html|svg)$/,
+      compressionOptions: {
+        params: {
+          [require("zlib").constants.BROTLI_PARAM_QUALITY]: 11,
+        },
+      },
+      threshold: 8192,
+      minRatio: 0.8,
+      deleteOriginalAssets: false,
+    }),
+
+    // PWA 支持 - Service Worker
+    new WorkboxWebpackPlugin.GenerateSW({
+      clientsClaim: true,
+      skipWaiting: true,
+      maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
+      runtimeCaching: [
+        {
+          urlPattern: /^https:\/\/fonts\.googleapis\.com/,
+          handler: "StaleWhileRevalidate",
+          options: {
+            cacheName: "google-fonts-stylesheets",
+          },
+        },
+        {
+          urlPattern: /^https:\/\/fonts\.gstatic\.com/,
+          handler: "CacheFirst",
+          options: {
+            cacheName: "google-fonts-webfonts",
+            expiration: {
+              maxEntries: 30,
+              maxAgeSeconds: 60 * 60 * 24 * 365, // 1 年
+            },
+          },
+        },
+      ],
+    }),
+
+    // 包大小分析（可选，用于分析打包结果）
+    ...(process.env.ANALYZE ? [
+      new BundleAnalyzerPlugin({
+        analyzerMode: "static",
+        openAnalyzer: false,
+        reportFilename: "bundle-report.html",
+      })
+    ] : []),
+
+    // 模块联邦插件（如果需要微前端）
+    // new webpack.container.ModuleFederationPlugin({
+    //   name: "shell",
+    //   remotes: {},
+    //   shared: {
+    //     react: { singleton: true },
+    //     "react-dom": { singleton: true },
+    //   },
+    // }),
+
+    // 忽略插件（减少不必要的依赖）
+    new webpack.IgnorePlugin({
+      resourceRegExp: /^\.\/locale$/,
+      contextRegExp: /moment$/,
     }),
   ].filter(Boolean),
 
-  // 开发环境优化配置
+  // 生产环境优化配置
   optimization: {
-    removeAvailableModules: false,
-    removeEmptyChunks: false,
-    splitChunks: false, // 开发环境不需要代码分割，加快构建速度
-    minimize: false, // 开发环境不压缩代码
-    usedExports: false,
-    sideEffects: false,
-    // 开发环境下保持模块名称便于调试
-    chunkIds: "named",
-    moduleIds: "named",
+    // 启用压缩
+    minimize: true,
+    minimizer: [
+      // JavaScript 压缩
+      new TerserPlugin({
+        terserOptions: {
+          parse: {
+            ecma: 8,
+          },
+          compress: {
+            ecma: 5,
+            warnings: false,
+            comparisons: false,
+            inline: 2,
+            drop_console: true, // 移除 console
+            drop_debugger: true, // 移除 debugger
+            pure_funcs: ["console.log", "console.info"], // 移除特定函数调用
+          },
+          mangle: {
+            safari10: true,
+          },
+          format: {
+            ecma: 5,
+            comments: false, // 移除注释
+            ascii_only: true,
+          },
+        },
+        parallel: true, // 并行压缩
+        extractComments: false, // 不提取注释到单独文件
+      }),
+
+      // CSS 压缩
+      new CssMinimizerPlugin({
+        minimizerOptions: {
+          preset: [
+            "default",
+            {
+              discardComments: { removeAll: true }, // 移除所有注释
+              normalizeWhitespace: true, // 标准化空白字符
+              colormin: true, // 颜色值最小化
+              minifySelectors: true, // 选择器最小化
+            },
+          ],
+        },
+        parallel: true,
+      }),
+    ],
+
+    // 代码分割策略
+    splitChunks: {
+      chunks: "all",
+      minSize: 20000, // 最小分割大小
+      maxSize: 244000, // 最大分割大小
+      cacheGroups: {
+        // 默认缓存组
+        default: {
+          minChunks: 2,
+          priority: -20,
+          reuseExistingChunk: true,
+        },
+
+        // 第三方库
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: "vendors",
+          priority: -10,
+          chunks: "all",
+          enforce: true,
+        },
+
+        // React 生态系统
+        react: {
+          test: /[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/,
+          name: "react-vendor",
+          priority: 10,
+          chunks: "all",
+          enforce: true,
+        },
+
+        // UI 库（如 antd, material-ui 等）
+        ui: {
+          test: /[\\/]node_modules[\\/](antd|@ant-design|@mui|@material-ui)[\\/]/,
+          name: "ui-vendor",
+          priority: 8,
+          chunks: "all",
+          enforce: true,
+        },
+
+        // 工具库
+        utils: {
+          test: /[\\/]node_modules[\\/](lodash|moment|dayjs|axios|classnames)[\\/]/,
+          name: "utils-vendor",
+          priority: 7,
+          chunks: "all",
+          enforce: true,
+        },
+
+        // 图标库
+        icons: {
+          test: /[\\/]node_modules[\\/](@ant-design\/icons|react-icons|heroicons)[\\/]/,
+          name: "icons-vendor",
+          priority: 6,
+          chunks: "all",
+          enforce: true,
+        },
+
+        // 公共样式
+        styles: {
+          test: /\.(css|scss|sass|less)$/,
+          name: "styles",
+          priority: 5,
+          chunks: "all",
+          enforce: true,
+        },
+      },
+    },
+
+    // 运行时代码分离
+    runtimeChunk: {
+      name: entrypoint => `runtime-${entrypoint.name}`,
+    },
+
+    // 模块 ID 生成策略
+    moduleIds: "deterministic", // 确定性 ID，有利于缓存
+    chunkIds: "deterministic",
+
+    // Tree Shaking 配置
+    usedExports: true,
+    sideEffects: false, // 标记为无副作用，启用更激进的 tree shaking
+
+    // 合并重复模块
+    mergeDuplicateChunks: true,
+
+    // 移除空的 chunks
+    removeEmptyChunks: true,
+
+    // 标记未使用的模块
+    flagIncludedChunks: true,
+
+    // 内联 webpack 运行时
+    innerGraph: true,
+
+    // 实际使用的导出
+    realContentHash: true,
   },
 
-  // 统计信息配置
-  stats: {
-    preset: "minimal",
-    colors: true,
-    errorDetails: true,
-    builtAt: true,
-    timings: true,
-    modules: false,
-    assets: false,
-    children: false,
-    chunks: false,
-    hash: false,
-    version: false,
-    entrypoints: false,
-  },
-	module: {
+  // 模块配置（生产环境特定）
+  module: {
     rules: [
+      // TypeScript/JavaScript 处理
       {
         test: /\.(js|jsx|ts|tsx)$/,
         exclude: /node_modules/,
         use: {
           loader: "swc-loader",
           options: {
-            // 可以在这里覆盖 .swcrc 的配置，或者直接使用 .swcrc
-            // 如果不指定 options，会自动读取 .swcrc 文件
-            
-            // 开发环境特定配置示例
             jsc: {
+              parser: {
+                syntax: "typescript",
+                tsx: true,
+                decorators: true,
+                dynamicImport: true,
+              },
               transform: {
                 react: {
-                  refresh: process.env.NODE_ENV === 'development'
-                }
-              }
+                  runtime: "automatic",
+                  development: false, // 生产模式
+                  refresh: false, // 生产环境不需要热刷新
+                },
+              },
+              target: "es2020",
+              loose: false,
+              externalHelpers: false,
             },
-            env:  process.env.NODE_ENV === 'production' ?
-                {
-                    chrome: "90",
-                    firefox: "88", 
-                    safari: "14",
-                    edge: "90"
-                  }: null
-          }
-        }
-      }
-    ]
-  },
-  // 监听配置
-  watchOptions: {
-    aggregateTimeout: 200,
-    poll: false,
-    ignored: /node_modules/,
+            minify: true, // 启用 SWC 压缩
+            module: {
+              type: "es6",
+            },
+            sourceMaps: true,
+          },
+        },
+      },
+    ],
   },
 
-  // 开发环境下的实验性功能
-  experiments: {
-    lazyCompilation: {
-      // 启用懒编译以提升开发体验
-      entries: false,
-      imports: true,
+  // 外部化依赖（CDN 加载）
+  externals: [
+    {
+      // 如果使用 CDN 加载这些库，可以配置为外部依赖
+      react: "React",
     },
-    // 缓存编译结果
-    cacheUnaffected: true,
+    // 处理 react-dom 的子模块, 在react 19 中, 会有 client 和 server 两个 react-dom包, 我们需要灵活的去处理它们
+    function({ request }, callback) {
+      if (/^react-dom\//.test(request)) {
+        return callback(null, 'ReactDOM');
+      }
+      callback();
+    },
+  ],
+
+  // 解析配置
+  resolve: {
+    // 生产环境可以移除一些不必要的扩展名以提升解析速度
+    extensions: [".tsx", ".ts", ".jsx", ".js"],
+    // 优化模块解析
+    symlinks: false,
+    cacheWithContext: false,
   },
 
-  // 性能提示配置（开发环境关闭）
+  // 性能提示配置
   performance: {
-    hints: false,
+    hints: "warning", // 显示性能警告
+    maxEntrypointSize: 512000, // 入口点最大大小 500KB
+    maxAssetSize: 512000, // 单个资源最大大小 500KB
+    assetFilter: function(assetFilename) {
+      // 只对 JS 和 CSS 文件进行性能检查
+      return assetFilename.endsWith(".js") || assetFilename.endsWith(".css");
+    },
+  },
+
+  // 统计信息配置
+  stats: {
+    preset: "normal",
+    colors: true,
+    hash: true,
+    timings: true,
+    chunks: false,
+    chunkModules: false,
+    children: false,
+    modules: false,
+    reasons: false,
+    source: false,
+    errors: true,
+    errorDetails: true,
+    warnings: true,
+    publicPath: false,
+    builtAt: true,
+    // 显示打包大小信息
+    assets: true,
+    assetsSort: "size",
+    // 过滤掉小文件
+    excludeAssets: [
+      /\.(png|jpe?g|gif|svg)$/,
+      /\.(woff|woff2|eot|ttf|otf)$/,
+    ],
+  },
+
+  // 缓存配置
+  cache: {
+    type: "filesystem",
+    version: "1.0",
+    cacheDirectory: path.resolve(__dirname, "../node_modules/.cache/webpack"),
+    buildDependencies: {
+      config: [__filename],
+    },
+    // 缓存内容哈希
+    hashAlgorithm: "xxhash64",
   },
 
   // 基础设施日志配置
   infrastructureLogging: {
-    level: "warn",
+    level: "error", // 只显示错误日志
+    debug: false,
   },
 
   // 目标环境
-  target: "web",
+  target: ["web", "es2020"],
+
+  // 实验性功能
+  experiments: {
+    // 异步 WebAssembly
+    asyncWebAssembly: false,
+    
+    // 向后兼容性
+    backCompat: true,
+    
+    
+    // 缓存未受影响的模块
+    cacheUnaffected: true,
+    
+    // CSS 作为模块类型
+    css: false,
+    
+    // 延迟导入
+    deferImport: false,
+    
+    // 未来默认值
+    futureDefaults: false,
+    
+    // 分层构建
+    layers: false,
+    
+    // 懒编译
+    lazyCompilation: false,
+    
+    // ES 模块输出
+    outputModule: false,
+    
+    // 同步 WebAssembly
+    syncWebAssembly: false,
+    
+    // 顶层 await
+    topLevelAwait: true,
+  },
+
+  // 监听配置（通常生产环境不需要）
+  watch: false,
 };

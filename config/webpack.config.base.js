@@ -1,5 +1,4 @@
 const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
@@ -33,29 +32,6 @@ module.exports = {
   // 模块规则
   module: {
     rules: [
-      // TypeScript 和 JSX 处理 (使用 SWC)
-      {
-        test: /\.(ts|tsx|js|jsx)$/,
-        exclude: /node_modules/,
-        use: [
-          {
-            loader: 'swc-loader',
-            options: {
-              // 开发/生产环境特定配置
-              jsc: {
-                transform: {
-                  react: {
-                    development: process.env.NODE_ENV === 'development',
-                    refresh: process.env.NODE_ENV === 'development' // React Fast Refresh
-                  }
-                }
-              },
-              minify: process.env.NODE_ENV === 'production'
-            }
-          }
-        ]
-      },
-
       // CSS 处理
       {
         test: /\.css$/,
@@ -187,26 +163,6 @@ module.exports = {
   plugins: [
     // 清理输出目录
     new CleanWebpackPlugin(),
-
-    // HTML 模板
-    new HtmlWebpackPlugin({
-      template: './public/index.html',
-      filename: 'index.html',
-      inject: 'body',
-      minify: {
-        removeComments: true,
-        collapseWhitespace: true,
-        removeAttributeQuotes: true
-      }
-    }),
-
-    // CSS 提取 (生产环境)
-    ...(process.env.NODE_ENV === 'production' ? [
-      new MiniCssExtractPlugin({
-        filename: 'css/[name].[contenthash:8].css',
-        chunkFilename: 'css/[name].[contenthash:8].chunk.css'
-      })
-    ] : [])
   ],
 
   // 优化配置
