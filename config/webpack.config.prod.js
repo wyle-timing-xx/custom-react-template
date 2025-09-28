@@ -5,7 +5,6 @@ const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const CompressionPlugin = require("compression-webpack-plugin");
 const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
-const WorkboxWebpackPlugin = require("workbox-webpack-plugin");
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 /**
@@ -16,8 +15,8 @@ module.exports = {
   // 生产模式 - 启用各种优化
   mode: "production",
 
-  // 生产环境源码映射 - 平衡文件大小和调试需求
-  devtool: "source-map", // 生成独立的 .map 文件，便于错误追踪
+  // 生产环境源码映射 - 生成 main.js.map 文件（包含完整源码映射）, 用户看不到源码，但 source map 文件存在
+  devtool: "hidden-source-map", // 生成独立的 .map 文件，便于错误追踪
 
   // 生产环境输出配置
   output: {
@@ -32,8 +31,6 @@ module.exports = {
     pathinfo: false, // 不包含路径信息，减小包体积
     // 跨域加载资源配置
     crossOriginLoading: "anonymous",
-    // 模块联邦相关（如果使用）
-    // uniqueName: "custom-react-app",
   },
 
   // 生产环境插件配置
@@ -107,32 +104,6 @@ module.exports = {
       deleteOriginalAssets: false,
     }),
 
-    // PWA 支持 - Service Worker
-    new WorkboxWebpackPlugin.GenerateSW({
-      clientsClaim: true,
-      skipWaiting: true,
-      maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
-      runtimeCaching: [
-        {
-          urlPattern: /^https:\/\/fonts\.googleapis\.com/,
-          handler: "StaleWhileRevalidate",
-          options: {
-            cacheName: "google-fonts-stylesheets",
-          },
-        },
-        {
-          urlPattern: /^https:\/\/fonts\.gstatic\.com/,
-          handler: "CacheFirst",
-          options: {
-            cacheName: "google-fonts-webfonts",
-            expiration: {
-              maxEntries: 30,
-              maxAgeSeconds: 60 * 60 * 24 * 365, // 1 年
-            },
-          },
-        },
-      ],
-    }),
 
     // 包大小分析（可选，用于分析打包结果）
     ...(process.env.ANALYZE ? [
