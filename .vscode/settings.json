@@ -45,7 +45,6 @@
 	// 文件浏览器配置
 	"files.exclude": {
 		"**/node_modules": true,
-		"**/dist": true,
 		"**/build": true
 	}
 }
