@@ -1,4 +1,3 @@
-// .vscode/settings.json - 优化开发体验
 {
 	// TypeScript 配置
 	"typescript.preferences.includePackageJsonAutoImports": "on",
