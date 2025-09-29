@@ -1,4 +1,1 @@
-#!/usr/bin/env sh
-echo "🔥 pre-commit file is running!"
-. "$(dirname -- "$0")/_/husky.sh"
-# npm run lint
+npm run lint

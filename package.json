@@ -14,12 +14,12 @@
 		"lint:check": "eslint src --ext .ts,.tsx,.js,.jsx",
 		"prepare": "husky"
 	},
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
-  },
+	"husky": {
+		"hooks": {
+			"pre-commit": "lint-staged",
+			"commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+		}
+	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
@@ -66,18 +66,18 @@
 		"react": "19.1.0",
 		"react-dom": "19.1.0"
 	},
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{css,scss,less}": [
-      "prettier --write"
-    ],
-    "*.{json,md}": [
-      "prettier --write"
-    ]
-  },
+	"lint-staged": {
+		"*.{js,jsx,ts,tsx}": [
+			"eslint --fix",
+			"prettier --write"
+		],
+		"*.{css,scss,less}": [
+			"prettier --write"
+		],
+		"*.{json,md}": [
+			"prettier --write"
+		]
+	},
 	"browserslist": {
 		"production": [
 			">0.2%",
