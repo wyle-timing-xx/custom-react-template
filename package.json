@@ -12,7 +12,7 @@
 		"format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,css,scss,json,md}\"",
 		"lint": "eslint src --ext .ts,.tsx,.js,.jsx --fix",
 		"lint:check": "eslint src --ext .ts,.tsx,.js,.jsx",
-		"prepare": "husky"
+		"prepare": "husky install"
 	},
 	"husky": {
 		"hooks": {
@@ -24,6 +24,8 @@
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
+		"@commitlint/cli": "^20.0.0",
+		"@commitlint/config-conventional": "^20.0.0",
 		"@pmmmwh/react-refresh-webpack-plugin": "^0.6.1",
 		"@swc/core": "^1.13.19",
 		"@swc/helpers": "^0.5.17",
@@ -44,6 +46,7 @@
 		"eslint-plugin-react-refresh": "^0.4.5",
 		"html-webpack-plugin": "^5.6.4",
 		"husky": "^9.1.7",
+		"lint-staged": "^16.2.3",
 		"mini-css-extract-plugin": "^2.9.4",
 		"postcss": "^8.5.6",
 		"postcss-loader": "^8.2.0",
