@@ -45,6 +45,6 @@
 		},
 		"types": ["node"]
 	},
-	"include": ["src/**/*", "src/**/*.tsx", "src/**/*.ts", "src/**/*.jsx", "src/**/*.js"],
+	"include": ["src/**/*", "src/**/*.tsx", "src/**/*.ts", "src/**/*.jsx", "src/**/*.js", "src/**/*.css"],
 	"exclude": ["node_modules", "dist", "build", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"]
 }
