@@ -1,6 +1,4 @@
-body {
-  background-color: red;
-}
-.abc {
-  background-color: red;
-}
+@import "tailwindcss";
+
+/* 可添加自定义样式（保留覆盖） */
+/* .abc { @apply bg-red-500; } */

@@ -1,5 +1,6 @@
 module.exports = {
   plugins: [
+    require('@tailwindcss/postcss'),
     'autoprefixer',
     'postcss-preset-env',
     // 现代化CSS功能

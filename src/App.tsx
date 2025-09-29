@@ -1,10 +1,8 @@
-import styles from './App.module.css';
 const App = () => {
   return (
-    <>
-      <div className={styles.abc}>test css</div>
-      APP
-    </>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 p-6">
+      App
+    </div>
   );
 };
 
