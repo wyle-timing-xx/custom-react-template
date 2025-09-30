@@ -3,7 +3,7 @@ const webpack = require('webpack');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const { port, host } = require('./webpack.constant');
+const { port, host } = require('./webpack.tool');
 /**
  * Webpack 开发环境配置
  * 注意：这里不再需要 merge，因为合并操作在主配置文件中完成
